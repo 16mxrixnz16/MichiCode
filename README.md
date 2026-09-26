@@ -1,3 +1,5 @@
+> 🧭 **Tarea – Skill propia:** la skill **Vibecodear** está en [`.claude/skills/vibecodear/`](.claude/skills/vibecodear/). Instrucciones, requisitos, ejemplo y pruebas en su [README](.claude/skills/vibecodear/README.md).
+
 # 🐈 MichiCode: Acortador de URLs y Generador de Códigos QR
 
 ## 🚀 Resumen del Proyecto
