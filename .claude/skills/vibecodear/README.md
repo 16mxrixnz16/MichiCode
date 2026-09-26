@@ -67,43 +67,67 @@ Los scripts también se pueden ejecutar solos:
 python .claude/skills/vibecodear/scripts/inspect_project.py .
 python .claude/skills/vibecodear/scripts/verify.py .                          # proyectos Node
 python .claude/skills/vibecodear/scripts/verify.py . --cmd "python -m pytest" # cualquier stack
-python .claude/skills/vibecodear/scripts/run_local.py . --cmd "npm run dev" --port 5000
+python .claude/skills/vibecodear/scripts/run_local.py . --cmd "npm run dev" --port 5000 --path /health
+python .claude/skills/vibecodear/scripts/run_local.py . --compose --port 80          # todo el stack con Docker
 python .claude/skills/vibecodear/scripts/sprint_doc.py new . --objective "El backend responde en /health"
 python .claude/skills/vibecodear/scripts/sprint_doc.py list .
 ```
 
-## Ejemplo de entrada y resultado esperado
+## Ejemplo real de entrada y resultado
 
-**Entrada (en Claude Code, dentro de cualquier proyecto):**
+Ejecución real sobre este repositorio (MichiCode: React + Express + MongoDB + Docker), en la que la usuaria había perdido sus archivos `.env`.
+
+**Entrada (en Claude Code):**
 ```
-/vibecodear quiero que el proyecto arranque localmente y tenga tests
+/vibecodear la prioridad es que pueda levantar de manera local y que funcionen sus
+funcionalidades [...] olvidé el contenido de mis archivos .env del proyecto, dame una
+propuesta de solución
 ```
 
-**Qué hace la skill:** ejecuta `inspect_project.py` sobre la raíz del proyecto y obtiene un JSON con esta forma (ejemplo ilustrativo de una API Node + MongoDB sin configurar):
+**1. Análisis.** `inspect_project.py` devolvió (extracto real; solo nombres de variables, nunca valores):
 
 ```json
 {
   "ok": true,
-  "stack": ["docker", "docker-compose", "express", "mongodb", "node"],
+  "stack": ["aws", "docker", "docker-compose", "express", "github-actions",
+            "mongodb", "node", "react", "terraform", "typescript"],
   "tests": { "count": 0, "files": [] },
-  "env": { "missing": ["MONGODB_URI", "PORT"] },
-  "possible_secrets": ["src/db.js:3"],
+  "env": { "missing": ["API_BASE", "DOCKER_USER", "EC2_HOST_DNS"] },
+  "possible_secrets": ["backend/src/server.ts:16"],
+  "docker_daemon_running": false,
   "warnings": [
-    "Dependencias no instaladas en . (falta node_modules)",
-    "2 variables de entorno usadas sin definir en ningún .env",
-    "No se encontraron archivos de test"
+    "Dependencias no instaladas en backend (falta node_modules)",
+    "Dependencias no instaladas en frontend (falta node_modules)",
+    "3 variables de entorno usadas sin definir en ningún .env",
+    "No se encontraron archivos de test",
+    "1 posibles secretos escritos en el código",
+    "El proyecto usa terraform pero 'terraform' no está instalado",
+    "El proyecto usa aws pero 'aws' no está instalado"
   ]
 }
 ```
 
-**Resultado esperado:** Claude presenta el diagnóstico, elige roles (p. ej. **DevOps + Backend + QA**), propone un objetivo medible como *"la API arranca localmente y `GET /health` responde 200"* y **espera tu aprobación**. Luego implementa, prueba, ejecuta localmente, pide tu feedback y genera:
+**2. Diagnóstico, roles y objetivo.** Claude verificó, sin mostrar valores, que los `.env` locales eran coherentes con `docker-compose.yml`. Detectó que faltaban plantillas `.env.example` y que Mongo no se publicaba al host. Activó **DevOps, Backend y QA** y propuso el objetivo *"con `docker compose up --build` el frontend responde en `http://localhost` y la API cumple `POST /shorten` 201, `GET /<code>` 301, `GET /<code>/qr` 200 y `GET /urls` 200"*. ⛔ Esperó la aprobación de la usuaria antes de tocar nada.
+
+**3. Resultado.** Se implementó, se probó y se levantó el stack. La usuaria validó la app y el Sprint quedó documentado:
+
+| Comprobación | Resultado |
+| --- | --- |
+| `GET http://localhost/` (frontend) | 200 |
+| `POST /shorten` | 201 |
+| `GET /<code>` | 301 → URL original |
+| `GET /<code>/qr`, `GET /urls` | 200 |
+| Estado del Sprint | ✅ Cumplido |
 
 ```
 .vibecodear/
 ├── README.md            # índice: Sprint | Objetivo | Estado
 └── sprints/
-    └── sprint-01.md     # objetivo, diagnóstico, roles, decisiones, tareas, cambios, pruebas, problemas, feedback, estado
+    ├── sprint-01.md     # recuperar el entorno local (.env.example, Mongo, pruebas)
+    └── sprint-02.md     # rediseño de la UI con iteración tras el feedback
 ```
+
+Documentos completos: [sprint-01.md](../../../.vibecodear/sprints/sprint-01.md) y [sprint-02.md](../../../.vibecodear/sprints/sprint-02.md). El segundo muestra un **ciclo de feedback**: la primera entrega se rechazó y el Sprint se iteró hasta cumplirse.
 
 ## Pruebas
 
@@ -112,7 +136,7 @@ cd .claude/skills/vibecodear
 python -m unittest discover -s tests -v
 ```
 
-Resultado esperado: `Ran 14 tests ... OK`.
+Resultado esperado: `Ran 16 tests ... OK`. En Linux o macOS aparece `OK (skipped=1)`, porque el test de Git Bash solo corre en Windows.
 
 | Caso | Tipo | Resultado esperado |
 | --- | --- | --- |
@@ -123,10 +147,29 @@ Resultado esperado: `Ran 14 tests ... OK`.
 | Test que falla (`fixtures/broken-app`) | ❌ Tests fallando | `failed` con la salida del error |
 | App que se cae al arrancar | ❌ No inicia | `ok: false` y log con la causa (`DATABASE_URL`) |
 | Puerto ocupado | ❌ Problema habitual | Usa otro puerto libre y lo avisa |
+| `--path health` (sin `/` inicial) | ✅ Entrada tolerada | Normaliza a `/health` |
+| `--path /health` escrito en Git Bash (Windows) | ❌ Problema habitual | MSYS lo convierte en `C:/Program Files/Git/health`; el script lo detecta y lo corrige |
 | Proyecto Python con carpeta `tests/` | ✅ Otro stack | Detecta `python` y cuenta el test |
 | Tests de otro stack con `--cmd` | ✅ Otro stack | Ejecuta el comando indicado y da `passed` |
 | Sprint sin objetivo | ❌ Entrada inválida | Error: "Falta --objective" |
 | Dos Sprints seguidos | ✅ Éxito | Crea `sprint-01.md`, `sprint-02.md` y el índice |
+
+Además, `run_local.py --compose` reintenta `docker compose up` si Docker Desktop aún está arrancando, y usa `docker-compose` si el plugin no responde. Esto se probó a mano con el stack real, porque requiere Docker (captura 8).
+
+### Capturas
+
+Salidas reales de los comandos (Git Bash en Windows 11), guardadas en [`docs/capturas/`](docs/capturas/):
+
+| # | Caso | Captura |
+| --- | --- | --- |
+| 1 | Suite completa: 16 tests OK | ![Tests](docs/capturas/01-tests.png) |
+| 2 | ✅ `inspect_project.py` detecta un proyecto Node | ![Inspect](docs/capturas/02-exito-inspect.png) |
+| 3 | ✅ `run_local.py` levanta la app y `/health` responde 200 | ![Run local](docs/capturas/03-exito-run-local.png) |
+| 4 | ❌ Ruta que no existe → `ok: false`, salida 2 | ![Ruta inválida](docs/capturas/04-error-ruta-invalida.png) |
+| 5 | ❌ Tests del proyecto fallan → `failed` con el error | ![Tests fallan](docs/capturas/05-error-tests-fallan.png) |
+| 6 | ❌ La app se cae al arrancar → log con la causa | ![App se cae](docs/capturas/06-error-app-se-cae.png) |
+| 7 | ❌ Sprint sin objetivo → error y no escribe nada | ![Sin objetivo](docs/capturas/07-error-sprint-sin-objetivo.png) |
+| 8 | ✅ Stack completo con Docker Compose (MichiCode) → 200 | ![Compose](docs/capturas/08-compose-michicode.png) |
 
 ## Seguridad
 

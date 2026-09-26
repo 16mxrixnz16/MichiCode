@@ -6,11 +6,16 @@ Uso:
 
 - Si el puerto está ocupado, busca uno libre y lo pasa como variable PORT (modo --cmd).
 - Detiene solo lo que levantó (nunca usa `docker compose down -v`).
+- `--path` acepta "/health" o "health". En Git Bash (Windows), MSYS convierte "/health" en
+  "C:/Program Files/Git/health"; el script deshace esa conversión.
+- Compose: usa `docker compose` o, si el plugin no está, `docker-compose`; si Docker
+  aún está arrancando, reintenta `up` unas veces antes de rendirse.
 Código de salida: 0 = la app respondió, 1 = no arrancó, 2 = entrada inválida.
 """
 import argparse
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -70,6 +75,62 @@ def kill_tree(proc):
             proc.kill()
 
 
+def url_path(path):
+    """Ruta HTTP a comprobar, siempre empezando con "/".
+
+    Git Bash (MSYS) reescribe los argumentos que parecen rutas POSIX: "/health" llega como
+    "C:/Program Files/Git/health". Se detecta la unidad de Windows y se quita la raíz de
+    MSYS (la da `cygpath`). Lanza ValueError si no se puede recuperar la ruta original.
+    """
+    if re.match(r"^[A-Za-z]:[\\/]", path):
+        norm = path.replace("\\", "/")
+        root = None
+        if shutil.which("cygpath"):
+            r = subprocess.run(["cygpath", "-m", "/"], capture_output=True, text=True)
+            root = r.stdout.strip().rstrip("/") if r.returncode == 0 else None
+        if not root or not norm.lower().startswith(root.lower() + "/"):
+            raise ValueError(
+                f"--path recibió una ruta de Windows ({path}). Si usas Git Bash, escribe la ruta "
+                "sin la barra inicial (--path health) o antepón MSYS_NO_PATHCONV=1 al comando.")
+        path = norm[len(root):]
+    return path if path.startswith("/") else "/" + path
+
+
+# Mensajes que indica Docker cuando el daemon todavía está arrancando
+DOCKER_STARTING = ("_ping", "500 Internal Server Error", "Cannot connect to the Docker daemon",
+                   "error during connect", "unknown flag", "is not a docker command")
+COMPOSE_RETRIES = 3
+COMPOSE_RETRY_WAIT = 10
+
+
+def compose_base():
+    """`docker compose` (plugin) o, si no responde, el binario clásico `docker-compose`."""
+    if subprocess.run(["docker", "compose", "version"], capture_output=True).returncode == 0:
+        return ["docker", "compose"]
+    if shutil.which("docker-compose"):
+        return ["docker-compose"]
+    return None
+
+
+def compose_up(folder):
+    """Ejecuta `compose up -d --build`, reintentando si Docker aún está arrancando.
+    Devuelve (base, proceso, intentos)."""
+    for attempt in range(1, COMPOSE_RETRIES + 1):
+        base = compose_base()
+        if base is None:
+            if attempt == COMPOSE_RETRIES:
+                return None, None, attempt
+            time.sleep(COMPOSE_RETRY_WAIT)
+            continue
+        up = subprocess.run(base + ["up", "-d", "--build"], cwd=folder, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace")
+        starting = any(m in up.stdout + up.stderr for m in DOCKER_STARTING)
+        if up.returncode == 0 or not starting or attempt == COMPOSE_RETRIES:
+            return base, up, attempt
+        time.sleep(COMPOSE_RETRY_WAIT)
+    return None, None, COMPOSE_RETRIES
+
+
 def log_tail(path, n=25):
     try:
         return "\n".join(Path(path).read_text(encoding="utf-8", errors="replace").splitlines()[-n:])
@@ -98,6 +159,12 @@ def main():
         out.update(ok=False, error=f"Carpeta inválida: {folder}")
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 2
+    try:
+        path = url_path(args.path)
+    except ValueError as e:
+        out.update(ok=False, error=str(e))
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        return 2
     if not args.cmd and not args.compose:
         out.update(ok=False, error="Indica --cmd \"<comando>\" o --compose")
         print(json.dumps(out, ensure_ascii=False, indent=2))
@@ -112,24 +179,29 @@ def main():
             out.update(ok=False, error="El daemon de Docker no está corriendo (abre Docker Desktop)")
             print(json.dumps(out, ensure_ascii=False, indent=2))
             return 1
-        up = subprocess.run(["docker", "compose", "up", "-d", "--build"], cwd=folder,
-                            capture_output=True, text=True, encoding="utf-8", errors="replace")
+        base, up, attempts = compose_up(folder)
+        if base is None:
+            out.update(ok=False, error="No se encontró Docker Compose (ni `docker compose` ni `docker-compose`)")
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            return 1
+        out.update(compose=" ".join(base), attempts=attempts)
         if up.returncode != 0:
             out.update(ok=False, error="docker compose up falló",
                        log="\n".join((up.stdout + up.stderr).splitlines()[-25:]))
             print(json.dumps(out, ensure_ascii=False, indent=2))
             return 1
-        url = f"http://127.0.0.1:{args.port}{args.path}"
+        url = f"http://127.0.0.1:{args.port}{path}"
         code = wait_for(url, args.wait)
-        ps = subprocess.run(["docker", "compose", "ps"], cwd=folder, capture_output=True, text=True)
+        ps = subprocess.run(base + ["ps"], cwd=folder, capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
         out.update(ok=code is not None, url=url, http_status=code, services=ps.stdout.strip())
         if code is None:
-            logs = subprocess.run(["docker", "compose", "logs", "--tail", "25"], cwd=folder,
+            logs = subprocess.run(base + ["logs", "--tail", "25"], cwd=folder,
                                   capture_output=True, text=True, encoding="utf-8", errors="replace")
             out["log"] = logs.stdout[-4000:]
         if not args.keep:
-            subprocess.run(["docker", "compose", "stop"], cwd=folder, capture_output=True)
-            out["stopped"] = "docker compose stop (los volúmenes se conservan)"
+            subprocess.run(base + ["stop"], cwd=folder, capture_output=True)
+            out["stopped"] = f"{' '.join(base)} stop (los volúmenes se conservan)"
         print(json.dumps(out, ensure_ascii=False, indent=2))
         return 0 if code is not None else 1
 
@@ -141,7 +213,7 @@ def main():
     log = open(log_path, "w", encoding="utf-8")
     env = {**os.environ, "PORT": str(port), "BROWSER": "none"}
     proc = subprocess.Popen(args.cmd, cwd=folder, shell=True, stdout=log, stderr=subprocess.STDOUT, env=env)
-    url = f"http://127.0.0.1:{port}{args.path}"
+    url = f"http://127.0.0.1:{port}{path}"
     code = wait_for(url, args.wait, proc)
     log.flush()
     out.update(ok=code is not None, url=url, port=port, http_status=code, log_file=str(log_path))

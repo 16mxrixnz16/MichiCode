@@ -115,6 +115,21 @@ class RunLocal(unittest.TestCase):
         self.assertNotEqual(out["port"], taken)
         self.assertIn("ocupado", out["warning"])
 
+    def test_path_without_leading_slash(self):
+        code, out = run("run_local.py", OK_APP, "--cmd", "node server.js",
+                        "--port", 4331, "--path", "health", "--wait", 20)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(out["url"].endswith("/health"))
+
+    @unittest.skipUnless(shutil.which("cygpath"), "solo en Git Bash / MSYS (Windows)")
+    def test_path_mangled_by_git_bash(self):
+        # Lo que llega cuando en Git Bash se escribe --path /health
+        root = subprocess.run(["cygpath", "-m", "/"], capture_output=True, text=True).stdout.strip()
+        code, out = run("run_local.py", OK_APP, "--cmd", "node server.js",
+                        "--port", 4341, "--path", root + "health", "--wait", 20)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(out["url"].endswith(":%d/health" % out["port"]), out["url"])
+
     def test_app_that_crashes(self):
         code, out = run("run_local.py", BROKEN_APP, "--cmd", "node server.js",
                         "--port", 4399, "--wait", 10)
