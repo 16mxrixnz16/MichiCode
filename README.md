@@ -81,7 +81,7 @@ El despliegue en la instancia EC2 se realiza manualmente (o vía GitHub Actions)
 | Servicio | Variable | Valor en Producción | Descripción |
 | :--- | :--- | :--- | :--- |
 | **Backend** | `MONGODB_URI` | `mongodb://root:rootpassword@michicode-mongo:27017/michicode?authSource=admin` | Conexión a la base de datos dentro de la red Docker. |
-| **Backend** | `BASE_URL` | `http://52.33.205.250:5000` | URL base utilizada para generar las URLs cortas y los QRs. |
+| **Backend** | `PUBLIC_URL_HOST` | `http://52.33.205.250:5000` | URL base utilizada para generar las URLs cortas y los QRs. |
 | **Frontend** | `REACT_APP_API_BASE_URL` | `http://52.33.205.250:5000` | URL para que el frontend acceda al backend (configurada durante el build). |
 | **MongoDB** | `MONGO_INITDB_ROOT_PASSWORD` | `rootpassword` | Credencial de acceso a la DB. |
 
@@ -117,7 +117,7 @@ Se utiliza una red Docker (`michicode-net`) para permitir la comunicación inter
       -p 5000:5000 \
       -e PORT=5000 \
       -e MONGODB_URI="mongodb://root:rootpassword@michicode-mongo:27017/michicode?authSource=admin" \
-      -e BASE_URL="[http://52.33.205.250:5000](http://52.33.205.250:5000)" \
+      -e PUBLIC_URL_HOST="http://52.33.205.250:5000" \
       marianz16/michicode-backend:latest
     ```
 

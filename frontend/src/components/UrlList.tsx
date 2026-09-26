@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import {
-  Paper,
   Typography,
   List,
   ListItem,
@@ -9,9 +8,14 @@ import {
   CircularProgress,
   Box,
   Divider,
+  Stack,
+  Alert,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import useFetch from "../hooks/useFetch";
+import SoftCard from "./SoftCard";
+import { EmptyBox } from "./cats/Illustrations";
 
 interface UrlItem {
   shortCode: string;
@@ -32,104 +36,87 @@ const UrlList: React.FC<UrlListProps> = ({ refetchTrigger }) => {
     error,
     refetch,
   } = useFetch<UrlItem[]>("/urls", { skip: true });
+
   useEffect(() => {
     refetch();
   }, [refetchTrigger, refetch]);
 
-  if (loading) {
-    return (
-      <Box textAlign="center" py={10}>
-          <CircularProgress size={60} />
-        <Typography variant="h6" mt={2}>
-          Cargando historial...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Typography textAlign="center" color="error" variant="h6" mt={4}>
-        {error}
-      </Typography>
-    );
-  }
-
   return (
-    <Paper
-      elevation={10}
-      sx={{ p: { xs: 3, sm: 5 }, borderRadius: 4, maxWidth: 900, mx: "auto" }}
-    >
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        textAlign="center"
-        gutterBottom
-        color="primary"
-      >
-        Historial de URLs Acortadas
-      </Typography>
-      {!urls || urls.length === 0 ? (
-        <Typography
-          textAlign="center"
-          color="text.secondary"
-          variant="h6"
-          mt={4}
-        >
-          Aún no has acortado ninguna URL
+    <SoftCard accent="primary">
+      <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+        <HistoryRoundedIcon color="primary" />
+        <Typography variant="h5" component="h3" color="text.primary">
+          URLs acortadas
         </Typography>
+        {urls && urls.length > 0 && (
+          <Chip label={urls.length} color="primary" size="small" />
+        )}
+      </Stack>
+
+      {loading && !urls ? (
+        <Box textAlign="center" py={6}>
+          <CircularProgress />
+          <Typography color="text.secondary" mt={2}>
+            Buscando tus enlaces...
+          </Typography>
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ borderRadius: "14px" }}>
+          {error}
+        </Alert>
+      ) : !urls || urls.length === 0 ? (
+        <Box textAlign="center" py={3}>
+          <EmptyBox label="Caja vacía: aún no hay URLs" />
+          <Typography color="text.secondary" fontWeight={700} mt={1}>
+            Aún no has acortado ninguna URL
+          </Typography>
+        </Box>
       ) : (
-        <List>
+        <List disablePadding sx={{ maxHeight: 420, overflowY: "auto", pr: 1 }}>
           {urls.map((item, index) => (
             <React.Fragment key={item.shortCode}>
-              <ListItem alignItems="flex-start">
+              <ListItem alignItems="flex-start" disableGutters>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography
-                        component="a"
-                        href={item.shortUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        sx={{ color: "primary.main", fontWeight: "bold" }}
-                      >
-                        {item.shortUrl}
-                        <OpenInNewIcon
-                          fontSize="small"
-                          sx={{ ml: 0.5, verticalAlign: "middle" }}
-                        />
-                      </Typography>
-                    </Box>
+                    <Typography
+                      component="a"
+                      href={item.shortUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      sx={{
+                        color: "primary.main",
+                        fontWeight: 800,
+                        textDecoration: "none",
+                        "&:hover": { textDecoration: "underline" },
+                      }}
+                    >
+                      {item.shortUrl}
+                      <OpenInNewIcon
+                        fontSize="small"
+                        sx={{ ml: 0.5, verticalAlign: "middle" }}
+                      />
+                    </Typography>
                   }
                   secondary={
-                    <React.Fragment>
+                    <>
                       <Typography variant="body2" color="text.secondary" noWrap>
                         {item.originalUrl}
                       </Typography>
-                      <Box
-                        sx={{
-                          mt: 1,
-                          display: "flex",
-                          gap: 1,
-                          flexWrap: "wrap",
-                        }}
-                      >
+                      <Box sx={{ mt: 1, display: "flex", gap: 1, flexWrap: "wrap" }}>
                         <Chip
-                          label={`${item.clicks} clicks`}
+                          label={`🐾 ${item.clicks} clicks`}
                           color="primary"
                           size="small"
+                          variant="outlined"
                         />
                         <Chip
-                          label={new Date(item.createdAt).toLocaleDateString(
-                            "es-ES"
-                          )}
-                          color="default"
+                          label={new Date(item.createdAt).toLocaleDateString("es-ES")}
                           size="small"
                         />
                       </Box>
-                    </React.Fragment>
+                    </>
                   }
-                  secondaryTypographyProps={{ component: "div" }}
+                  slotProps={{ secondary: { component: "div" } }}
                 />
               </ListItem>
               {index < urls.length - 1 && <Divider />}
@@ -137,7 +124,7 @@ const UrlList: React.FC<UrlListProps> = ({ refetchTrigger }) => {
           ))}
         </List>
       )}
-    </Paper>
+    </SoftCard>
   );
 };
 

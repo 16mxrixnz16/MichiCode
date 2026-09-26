@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Container, Stack, Typography, Box, Grid } from "@mui/material";
+import { Container, Stack, Typography, Box, Grid, Chip } from "@mui/material";
 import UrlShortener from "../components/UrlShortener";
 import QRGenerator from "../components/QRGenerator";
 import UrlList from "../components/UrlList";
 import QRList from "../components/QRList";
+import CatLane from "../components/cats/CatLane";
 
 const Home: React.FC = () => {
   const [urlRefetchTrigger, setUrlRefetchTrigger] = useState(0);
@@ -19,71 +20,97 @@ const Home: React.FC = () => {
 
   return (
     <Box
+      component="main"
       sx={{
         minHeight: "100vh",
-        bgcolor: "background.default",
         py: { xs: 4, sm: 6, md: 8 },
       }}
     >
       <Container maxWidth="lg">
-        <Stack spacing={2} alignItems="center" mb={8}>
+        <Stack spacing={2} alignItems="center" mt={{ xs: 2, md: 3 }}>
           <Typography
             variant="h1"
             component="h1"
-            fontWeight="900"
-            fontSize={{ xs: "3.5rem", sm: "5rem", md: "6rem" }}
+            fontSize={{ xs: "3.2rem", sm: "4.5rem", md: "5.5rem" }}
             textAlign="center"
-            color="primary"
             sx={{
               background: "linear-gradient(90deg, #7c3aed, #ec4899)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               lineHeight: 1,
+              letterSpacing: "-0.03em",
             }}
           >
-            MichiCode hola
+            MichiCode
           </Typography>
-                   {" "}
           <Typography
             variant="h5"
+            component="p"
             color="text.secondary"
             textAlign="center"
             maxWidth="600px"
           >
-            Acorta URLs al instante y genera códigos QR profesionales en segundos
+            Acorta URLs al instante y genera códigos QR profesionales en
+            segundos. Los michis se encargan del resto 🐾
           </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center" useFlexGap>
+            <Chip label="⚡ Instantáneo" variant="outlined" color="primary" />
+            <Chip label="🔗 Enlaces cortos" variant="outlined" color="primary" />
+            <Chip label="📱 QR descargable" variant="outlined" color="secondary" />
+          </Stack>
         </Stack>
-        <Grid container spacing={4}>
-          <Grid size={{xs:12, md:6}}>
-            <QRGenerator onQrGenerated={handleQrGenerated} />       
-          </Grid>
 
-          <Grid size={{xs:12, md:6}}>
-            <UrlShortener onUrlGenerated={handleUrlGenerated} />   
+        {/* Los gatos pasean en franjas propias, entre secciones: nunca tapan los recuadros */}
+        <CatLane coat="corazon" />
+
+        <Grid container spacing={4} alignItems="stretch">
+          <Grid size={{ xs: 12, md: 6 }}>
+            <UrlShortener onUrlGenerated={handleUrlGenerated} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <QRGenerator onQrGenerated={handleQrGenerated} />
           </Grid>
         </Grid>
-        <Box sx={{ mt: { xs: 6, md: 10 } }}>
+
+        <CatLane coat="noche" delay={1200} />
+
+        <Box>
           <Typography
             variant="h3"
-            fontWeight="bold"
+            component="h2"
             textAlign="center"
-            gutterBottom
             color="text.primary"
             mb={4}
           >
             Historial
           </Typography>
-          <Grid container spacing={4}>
-            {/* Historial QR (Izquierda) */}
-            <Grid size={{xs:12, md:6}}>
-              <QRList refetchTrigger={qrRefetchTrigger} />
-            </Grid>
-            {/* Historial URLs (Derecha) */}
-            <Grid size={{xs:12, md:6}}>
+          <Grid container spacing={4} alignItems="stretch">
+            <Grid size={{ xs: 12, md: 6 }}>
               <UrlList refetchTrigger={urlRefetchTrigger} />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <QRList refetchTrigger={qrRefetchTrigger} />
             </Grid>
           </Grid>
         </Box>
+
+        <CatLane coat="nube" delay={2400} />
+
+        <Stack component="footer" alignItems="center" spacing={0}>
+          <Box
+            sx={{
+              width: "100%",
+              borderTop: "3px solid",
+              borderColor: "primary.light",
+              pt: 2,
+              textAlign: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.secondary" fontWeight={700}>
+              Hecho con 🐾 por el equipo MichiCode
+            </Typography>
+          </Box>
+        </Stack>
       </Container>
     </Box>
   );

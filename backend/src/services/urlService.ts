@@ -1,7 +1,7 @@
-import { UrlModel } from '../models/urlModel.js';
+import { UrlModel, UrlDoc } from '../models/urlModel.js';
 import { generateShortCode } from '../utils/generateShortCode.js';
 
-function isValidHttpUrl(url: string): boolean {
+export function isValidHttpUrl(url: string): boolean {
   try {
     const u = new URL(url);
     return u.protocol === 'http:' || u.protocol === 'https:'; 
@@ -33,17 +33,23 @@ export const shortenUrl = async (originalUrl: string, host: string) => {
     short_url: shortUrl,
   });
   
-  return {
-    shortCode: doc.short_code,
-    originalUrl: doc.original_url,
-    shortUrl: doc.short_url,
-    clicks: doc.clicks,
-    createdAt: doc.created_at,
-  };
+  return toUrlDto(doc);
 };
 
+type UrlFields = Pick<UrlDoc, 'short_code' | 'original_url' | 'short_url' | 'clicks' | 'created_at'>;
+
+// Formato que consume el frontend (camelCase), igual en /shorten y /urls
+export const toUrlDto = (doc: UrlFields) => ({
+  shortCode: doc.short_code,
+  originalUrl: doc.original_url,
+  shortUrl: doc.short_url,
+  clicks: doc.clicks,
+  createdAt: doc.created_at,
+});
+
 export const getAllUrls = async () => {
-  return await UrlModel.find().sort({ created_at: -1 }).lean();
+  const docs = await UrlModel.find().sort({ created_at: -1 }).lean();
+  return docs.map(toUrlDto);
 };
 
 export const getUrlByCode = async (code: string) => {

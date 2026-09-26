@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "tsx --test \"src/__tests__/*.test.ts\"",
     "clean": "if (Test-Path dist) { Remove-Item -Recurse -Force dist }",
     "clean:build": "npm run clean && npm run build"
   },

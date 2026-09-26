@@ -1,6 +1,5 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
-  Paper,
   Typography,
   List,
   ListItem,
@@ -9,8 +8,13 @@ import {
   CircularProgress,
   Box,
   Divider,
+  Stack,
+  Alert,
 } from "@mui/material";
+import QrCode2RoundedIcon from "@mui/icons-material/QrCode2Rounded";
 import useFetch from "../hooks/useFetch";
+import SoftCard from "./SoftCard";
+import { EmptyBox } from "./cats/Illustrations";
 
 interface QrItem {
   _id: string;
@@ -32,90 +36,60 @@ const QRList: React.FC<QRListProps> = ({ refetchTrigger }) => {
     skip: true,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     refetch();
-  }, [refetchTrigger]);
-
-  if (loading) {
-    return (
-      <Box textAlign="center" py={10}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" mt={2}>
-            Cargando historial de QR...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <Typography textAlign="center" color="error" variant="h6" mt={4}>
-        {error}
-      </Typography>
-    );
-  }
+  }, [refetchTrigger, refetch]);
 
   return (
-    <Paper
-      elevation={10}
-      sx={{ p: { xs: 3, sm: 5 }, borderRadius: 4, maxWidth: 900, mx: "auto" }}
-    >
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        textAlign="center"
-        gutterBottom
-        color="secondary"
-      >
-        Historial de Códigos QR Generados
-      </Typography>
-      {!qrs || qrs.length === 0 ? (
-        <Typography
-          textAlign="center"
-          color="text.secondary"
-          variant="h6"
-          mt={4}
-        >
-            Aún no has generado ningún código QR
+    <SoftCard accent="secondary">
+      <Stack direction="row" spacing={1.5} alignItems="center" mb={2}>
+        <QrCode2RoundedIcon color="secondary" />
+        <Typography variant="h5" component="h3" color="text.primary">
+          Códigos QR generados
         </Typography>
+        {qrs && qrs.length > 0 && (
+          <Chip label={qrs.length} color="secondary" size="small" />
+        )}
+      </Stack>
+
+      {loading && !qrs ? (
+        <Box textAlign="center" py={6}>
+          <CircularProgress color="secondary" />
+          <Typography color="text.secondary" mt={2}>
+            Buscando tus códigos QR...
+          </Typography>
+        </Box>
+      ) : error ? (
+        <Alert severity="error" sx={{ borderRadius: "14px" }}>
+          {error}
+        </Alert>
+      ) : !qrs || qrs.length === 0 ? (
+        <Box textAlign="center" py={3}>
+          <EmptyBox label="Caja vacía: aún no hay códigos QR" />
+          <Typography color="text.secondary" fontWeight={700} mt={1}>
+            Aún no has generado ningún código QR
+          </Typography>
+        </Box>
       ) : (
-        <List>
+        <List disablePadding sx={{ maxHeight: 420, overflowY: "auto", pr: 1 }}>
           {qrs.map((item, index) => (
             <React.Fragment key={item._id}>
-              <ListItem alignItems="flex-start">
+              <ListItem alignItems="flex-start" disableGutters>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography component="span" fontWeight="bold">
-                        Contenido:
-                      </Typography>
-                      <Typography
-                        component="span"
-                        sx={{ wordBreak: "break-all" }}
-                      >
-                        {item.content}                 
-                      </Typography>
-                    </Box>
+                    <Typography fontWeight={700} sx={{ wordBreak: "break-all" }}>
+                      {item.content}
+                    </Typography>
                   }
                   secondary={
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        gap: 1,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <Box sx={{ mt: 1 }}>
                       <Chip
-                        label={new Date(item.createdAt).toLocaleDateString(
-                          "es-ES"
-                        )}
-                        color="default"
+                        label={new Date(item.createdAt).toLocaleDateString("es-ES")}
                         size="small"
                       />
                     </Box>
                   }
-                  secondaryTypographyProps={{ component: "div" }}
+                  slotProps={{ secondary: { component: "div" } }}
                 />
               </ListItem>
               {index < qrs.length - 1 && <Divider />}
@@ -123,7 +97,7 @@ const QRList: React.FC<QRListProps> = ({ refetchTrigger }) => {
           ))}
         </List>
       )}
-    </Paper>
+    </SoftCard>
   );
 };
 

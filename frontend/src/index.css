@@ -1,13 +1,278 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Degradado suave + huellitas de gato */
+  background-color: #faf7ff;
+  background-image:
+    url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='180'%20height='180'%20viewBox='0%200%20180%20180'%3E%3Cg%20fill='%238b5cf6'%20fill-opacity='0.09'%3E%3Cg%20transform='translate%2842%2050%29%20rotate%28-18%29%20scale%281%29'%3E%3Cpath%20d='M0%202%20C-5%202%20-11%206%20-12%2011%20C-13%2016%20-8%2018%20-4%2016.5%20C-2%2015.8%202%2015.8%204%2016.5%20C8%2018%2013%2016%2012%2011%20C11%206%205%202%200%202%20Z'/%3E%3Cellipse%20cx='-12'%20cy='-4'%20rx='3.6'%20ry='4.6'%20transform='rotate%28-25%20-12%20-4%29'/%3E%3Cellipse%20cx='-4.5'%20cy='-10'%20rx='3.8'%20ry='5'/%3E%3Cellipse%20cx='4.5'%20cy='-10'%20rx='3.8'%20ry='5'/%3E%3Cellipse%20cx='12'%20cy='-4'%20rx='3.6'%20ry='4.6'%20transform='rotate%2825%2012%20-4%29'/%3E%3C/g%3E%3Cg%20transform='translate%28128%20132%29%20rotate%2822%29%20scale%280.9%29'%3E%3Cpath%20d='M0%202%20C-5%202%20-11%206%20-12%2011%20C-13%2016%20-8%2018%20-4%2016.5%20C-2%2015.8%202%2015.8%204%2016.5%20C8%2018%2013%2016%2012%2011%20C11%206%205%202%200%202%20Z'/%3E%3Cellipse%20cx='-12'%20cy='-4'%20rx='3.6'%20ry='4.6'%20transform='rotate%28-25%20-12%20-4%29'/%3E%3Cellipse%20cx='-4.5'%20cy='-10'%20rx='3.8'%20ry='5'/%3E%3Cellipse%20cx='4.5'%20cy='-10'%20rx='3.8'%20ry='5'/%3E%3Cellipse%20cx='12'%20cy='-4'%20rx='3.6'%20ry='4.6'%20transform='rotate%2825%2012%20-4%29'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(circle at 10% 0%, #ede9fe 0, transparent 45%),
+    radial-gradient(circle at 90% 20%, #fce7f3 0, transparent 40%);
+  background-attachment: fixed;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* ---- Animaciones de los gatitos (Kitty / CatLane) ---- */
+.kitty-head,
+.kitty-paw-raised,
+.kitty-tail,
+.kitty-tail-sit,
+.kitty-leg,
+.kitty-paw-r,
+.kitty-bob,
+.kitty-breathe,
+.kitty-eyes-open {
+  transform-box: fill-box;
+}
+
+/* Parpadeo */
+.kitty-eyes-open {
+  transform-origin: center;
+  animation: kitty-blink 5s infinite;
+}
+.kitty-eyes-closed,
+.kitty-mouth-open,
+.kitty-tongue,
+.kitty-tail-front,
+.kitty-paw-raised {
+  display: none;
+}
+
+/* Cola moviéndose (de pie y sentado) */
+.kitty-tail {
+  transform-origin: 100% 100%;
+  animation: kitty-tail 1.8s ease-in-out infinite;
+}
+.kitty-tail-sit {
+  transform-origin: 0% 85%;
+  animation: kitty-tail-sit 3s ease-in-out infinite;
+}
+
+/* Caminar / correr */
+.kitty-leg {
+  transform-origin: 50% 0%;
+}
+.is-walk .kitty-leg-a,
+.is-run .kitty-leg-a {
+  animation: kitty-step 0.45s ease-in-out infinite alternate;
+}
+.is-walk .kitty-leg-b,
+.is-run .kitty-leg-b {
+  animation: kitty-step 0.45s ease-in-out infinite alternate-reverse;
+}
+.is-walk .kitty-bob {
+  animation: kitty-bob 0.45s ease-in-out infinite alternate;
+}
+.is-run .kitty-leg-a,
+.is-run .kitty-leg-b,
+.is-run .kitty-bob {
+  animation-duration: 0.2s;
+}
+.is-run .kitty-bob {
+  animation-name: kitty-bob;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Lamerse la cola: cabeza hacia la cola, cola hacia la boca, lengüita */
+.is-lick .kitty-head {
+  transform-origin: 50% 90%;
+  animation: kitty-lick 0.5s ease-in-out infinite alternate;
+}
+.is-lick .kitty-tail-sit {
+  display: none;
+}
+.is-lick .kitty-tail-front {
+  display: inline;
+}
+.is-lick .kitty-tongue,
+.is-groom .kitty-tongue {
+  display: inline;
+}
+.is-lick .kitty-eyes-open,
+.is-groom .kitty-eyes-open,
+.is-yawn .kitty-eyes-open {
+  display: none;
+}
+.is-lick .kitty-eyes-closed,
+.is-groom .kitty-eyes-closed,
+.is-yawn .kitty-eyes-closed {
+  display: inline;
+}
+
+/* Acicalarse: patita a la boca */
+.is-groom .kitty-paw-r {
+  display: none;
+}
+.is-groom .kitty-paw-raised {
+  display: inline;
+  transform-origin: 50% 100%;
+  animation: kitty-groom 0.6s ease-in-out infinite alternate;
+}
+.is-groom .kitty-head {
+  transform-origin: 50% 90%;
+  transform: rotate(-6deg);
+}
+
+/* Bostezar */
+.is-yawn .kitty-mouth-open {
+  display: inline;
+}
+.is-yawn .kitty-mouth {
+  display: none;
+}
+.is-yawn .kitty-head {
+  transform-origin: 50% 90%;
+  animation: kitty-yawn 1.6s ease-in-out;
+}
+
+/* Estirarse: patas delanteras adelante, cabeza abajo */
+.is-stretch .kitty-bob {
+  transform-origin: 30% 90%;
+  transform: rotate(8deg);
+  transition: transform 0.6s ease;
+}
+.is-stretch .kitty-front .kitty-leg {
+  transform: rotate(-55deg);
+  transition: transform 0.6s ease;
+}
+
+/* Jugar con el ovillo: manotazos */
+.is-bat .kitty-front .kitty-leg {
+  animation: kitty-bat 0.3s ease-in-out infinite alternate;
+}
+
+/* Dormir */
+.kitty-breathe {
+  transform-origin: 50% 100%;
+  animation: kitty-breathe 2.6s ease-in-out infinite;
+}
+.kitty-zzz text {
+  animation: michi-float 2.4s ease-in-out infinite;
+}
+.kitty-zzz text:nth-child(2) { animation-delay: 0.4s; }
+.kitty-zzz text:nth-child(3) { animation-delay: 0.8s; }
+
+/* Saltar sobre el láser */
+.kitty-pounce {
+  animation: kitty-pounce 0.5s cubic-bezier(0.3, 0.6, 0.4, 1);
+}
+
+.laser-dot {
+  background: #ff1f3d;
+  box-shadow: 0 0 6px 3px rgba(255, 31, 61, 0.55), 0 0 16px 6px rgba(255, 31, 61, 0.25);
+  animation: laser-flicker 0.25s infinite alternate;
+}
+
+/* Corazones al acariciar un gato */
+.kitty-hearts {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  pointer-events: none;
+}
+.kitty-hearts span {
+  position: absolute;
+  font-size: 14px;
+  animation: kitty-heart 1.2s ease-out forwards;
+}
+.kitty-hearts span:nth-child(2) {
+  left: 14px;
+  animation-delay: 0.15s;
+  opacity: 0;
+}
+
+.michi-hop {
+  animation: michi-hop 0.45s ease-out;
+}
+
+.michi-pop {
+  animation: michi-pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes kitty-blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+@keyframes kitty-tail {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(12deg); }
+}
+@keyframes kitty-tail-sit {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-12deg); }
+}
+@keyframes kitty-step {
+  from { transform: rotate(22deg); }
+  to { transform: rotate(-22deg); }
+}
+@keyframes kitty-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-2px); }
+}
+@keyframes kitty-lick {
+  from { transform: translate(8px, 8px) rotate(24deg); }
+  to { transform: translate(9px, 11px) rotate(30deg); }
+}
+@keyframes kitty-groom {
+  from { transform: translateY(0) rotate(-6deg); }
+  to { transform: translateY(-3px) rotate(4deg); }
+}
+@keyframes kitty-yawn {
+  0%, 100% { transform: rotate(0deg); }
+  40%, 70% { transform: rotate(-10deg) translateY(-2px); }
+}
+@keyframes kitty-bat {
+  from { transform: rotate(-10deg); }
+  to { transform: rotate(-70deg); }
+}
+@keyframes kitty-breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.04); }
+}
+@keyframes kitty-pounce {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(-34px) rotate(-6deg); }
+  100% { transform: translateY(0); }
+}
+@keyframes laser-flicker {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0.75; transform: scale(0.85); }
+}
+@keyframes kitty-heart {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
+}
+@keyframes michi-hop {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(-14px) rotate(-3deg); }
+  100% { transform: translateY(0); }
+}
+@keyframes michi-pop {
+  from { transform: translateX(-50%) scale(0.4); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+@keyframes michi-float {
+  0%, 100% { opacity: 0.2; transform: translateY(3px); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kitty *,
+  .kitty-pounce,
+  .michi-hop,
+  .michi-pop,
+  .laser-dot,
+  .kitty-hearts span {
+    animation: none !important;
+    transition: none !important;
+  }
 }
