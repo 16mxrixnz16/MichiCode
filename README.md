@@ -40,6 +40,20 @@ El proyecto incluye un archivo `docker-compose.yml` para levantar todo el stack 
 ### Prerrequisitos
 * Docker y Docker Compose instalados.
 
+### Variables de Entorno (Local)
+
+Los archivos `.env` no se versionan. Créalos a partir de las plantillas incluidas (valores de desarrollo, iguales a los de este README):
+
+```bash
+cp .env.example .env                    # credenciales de Mongo para docker compose
+cp backend/.env.example backend/.env    # PORT, MONGODB_URI, PUBLIC_URL_HOST
+cp frontend/.env.example frontend/.env  # REACT_APP_API_BASE_URL
+```
+
+> Las variables `MONGO_INITDB_*` solo se aplican la primera vez que se crea el volumen `mongo-data`. Si cambias la contraseña, recrea el volumen con `docker-compose down -v` (borra los datos locales).
+
+Para desarrollar sin Docker en el backend (`npm run dev`), `docker-compose.yml` publica Mongo en `127.0.0.1:27017`.
+
 ### Comandos de Ejecución
 
 1.  **Levantar el Stack:**
@@ -127,6 +141,17 @@ El proyecto está accesible públicamente a través de la IP de la instancia EC2
 ## 🔄 CI/CD con GitHub Actions
 
 El pipeline de CI/CD (definido en `.github/workflows/deploy.yml`) se encarga de automatizar la construcción, el testeo y el despliegue a la instancia EC2.
+
+### Secrets requeridos (GitHub → Settings → Secrets and variables → Actions)
+
+| Secret | Cómo obtenerlo / regenerarlo |
+| :--- | :--- |
+| `DOCKER_HUB_USERNAME` | Tu usuario de Docker Hub. |
+| `DOCKER_HUB_TOKEN` | Docker Hub → Account Settings → Personal access tokens (Read & Write). |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | AWS IAM → usuario del pipeline → Security credentials → Create access key (desactiva la anterior). |
+| `SSH_PRIVATE_KEY` | Contenido del `.pem` del key pair de la EC2 (si se perdió, crea un key pair nuevo y registra su clave pública en la instancia). |
+| `MONGO_INITDB_ROOT_USERNAME` / `MONGO_INITDB_ROOT_PASSWORD` | Credenciales de Mongo en producción; si cambian, el volumen existente conserva las antiguas. |
+| `DISCORD_WEBHOOK` | Discord → Configuración del canal → Integraciones → Webhooks → Copiar URL. |
 
 ### Flujo de Trabajo
 
